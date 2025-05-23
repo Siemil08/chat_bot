@@ -82,7 +82,7 @@ def investigate_tree(select_path, user_input):
         cond2 = cond & (df[next_col] == (user_input if user_input not in ["이전으로", "처음으로"] else path[-1]))
         row = df[cond2]
         if not row.empty:
-            msg = row.iloc[0]['출력']
+            msg = row.iloc[0]['출력지문']
             quick_replies = [
                 {"label": "이전으로", "action": "message", "messageText": "이전으로"},
                 {"label": "처음으로", "action": "message", "messageText": "처음으로"}
@@ -165,18 +165,17 @@ def skill():
                 }
             })
 
-        # 2. 트리형 조사 (조사 버튼 클릭 시 조사 시트 첫 행 출력)
+        # 2. 트리형 조사 (조사 버튼 클릭 시 조사 시트 첫 행 '출력지문' 출력)
         elif type_ == 'investigate_tree':
             select_path = params.get('select_path', '')
             user_input = params.get('user_input', '')
             if not select_path and not user_input:
-                # 조사 버튼을 처음 눌렀을 때만
                 df = pd.read_excel(EXCEL_PATH, sheet_name='조사', dtype=str).fillna('')
-                if df.empty or '출력' not in df.columns:
+                if df.empty or '출력지문' not in df.columns:
                     message = "조사 데이터가 없습니다."
                 else:
-                    message = df.iloc[0]['출력']
-                log_action(id_code, "[조사버튼]", message)
+                    message = df.iloc[0]['출력지문']
+                log_action(id_code, "조사", message)
                 return jsonify({
                     "version": "2.0",
                     "template": {
@@ -206,7 +205,7 @@ def skill():
             utterance = params.get('utterance', '')
             parts = utterance.split()
             if len(parts) < 6 or not user:
-                response = "장소와 타겟을 정확히 입력해주세요. 예시: 서울 강남구 삼성동 한국폴리텍 라온관 1층정수기"
+                response = "장소와 타겟을 정확히 입력해주세요. 예시: 서울 강남구 삼성동 우체국"
                 log_action(id_code, utterance, response)
                 return jsonify({
                     "version": "2.0",
@@ -215,7 +214,7 @@ def skill():
             places, target = parts[:5], parts[5]
             row = find_investigation(places, target)
             if row:
-                response = row['출력']
+                response = row['출력지문']
             else:
                 response = "해당 조건에 맞는 장소가 없습니다."
             log_action(id_code, utterance, response)
