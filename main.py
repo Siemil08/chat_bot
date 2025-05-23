@@ -12,14 +12,16 @@ app.secret_key = 'your_secret_key'
 EXCEL_PATH = 'bot.xlsx'
 LOG_XLSX_PATH = 'chat_log.xlsx'
 
+# 사용자 정보 조회 (Id_code, Name)
 def get_user(id_code):
     df = pd.read_excel(EXCEL_PATH, sheet_name='인증', dtype=str).fillna('')
     user = df[df['Id_code'] == id_code]
     return user.iloc[0].to_dict() if not user.empty else None
 
+# 로그 기록 (전체로그 + 사용자별 시트, 파일 자동 생성)
 def log_action(id_code, user_input, bot_response):
     user = get_user(id_code)
-    name = user['Name'] if user else 'Unknown'
+    name = user['Name'] if user and 'Name' in user else 'Unknown'
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     log_data = {
         'timestamp': [timestamp],
@@ -36,6 +38,7 @@ def log_action(id_code, user_input, bot_response):
         wb = Workbook()
         wb.remove(wb.active)
 
+    # 전체로그 시트
     if '전체로그' not in wb.sheetnames:
         ws_all = wb.create_sheet('전체로그')
         for r in dataframe_to_rows(df_log, index=False, header=True):
@@ -45,6 +48,7 @@ def log_action(id_code, user_input, bot_response):
         for r in dataframe_to_rows(df_log, index=False, header=False):
             ws_all.append(r)
 
+    # 사용자별 시트 (특수문자/공백 처리)
     safe_name = ''.join(c for c in name if c.isalnum() or c in ('_', '-')).strip() or 'Unknown'
     if safe_name not in wb.sheetnames:
         ws_user = wb.create_sheet(safe_name)
@@ -57,6 +61,7 @@ def log_action(id_code, user_input, bot_response):
 
     wb.save(LOG_XLSX_PATH)
 
+# 트리형 조사 (누적 선택, 이전/처음으로)
 def investigate_tree(select_path, user_input):
     df = pd.read_excel(EXCEL_PATH, sheet_name='조사', dtype=str).fillna('')
     path = [x for x in select_path.split(',') if x] if select_path else []
@@ -101,6 +106,7 @@ def investigate_tree(select_path, user_input):
 
     return msg, quick_replies, ','.join(path)
 
+# 기존 조사 (한 번에 장소/타겟 입력)
 def find_investigation(places, target):
     df = pd.read_excel(EXCEL_PATH, sheet_name='조사', dtype=str).fillna('')
     cond = (
@@ -114,13 +120,15 @@ def find_investigation(places, target):
     row = df[cond]
     return row.iloc[0].to_dict() if not row.empty else None
 
+# 정산 처리 (선택2=행동, 출력)
 def process_settlement(id_code, action, value=None):
     df = pd.read_excel(EXCEL_PATH, sheet_name='정산', dtype=str).fillna('')
-    row = df[df['행동'] == action]
+    row = df[df['선택2'] == action]
     if not row.empty:
-        return row.iloc[0].get('Unnamed: 3', '정산 처리 완료')
+        return row.iloc[0].get('출력', '정산 처리 완료')
     return '정산 처리 완료'
 
+# 랜덤 키워드 응답
 def get_random_answer(keyword):
     df = pd.read_excel(EXCEL_PATH, sheet_name='랜덤', dtype=str).fillna('')
     row = df[df['랜덤 키워드'] == keyword]
@@ -139,11 +147,14 @@ def skill():
 
         # 1. 인증
         if type_ == 'auth':
-            user = get_user(id_code)
-            if not user:
-                response = "인증코드가 유효하지 않습니다."
+            if not id_code:
+                response = "인증코드를 입력해주세요"
             else:
-                response = user.get('출력지문', f"{user['Name']}님 어서오세요.")
+                user = get_user(id_code)
+                if not user:
+                    response = "인증코드가 유효하지 않습니다."
+                else:
+                    response = f"{user['Name']}님 어서오세요."
             log_action(id_code, f"[인증] {id_code}", response)
             return jsonify({
                 "version": "2.0",
@@ -152,7 +163,7 @@ def skill():
                     "quickReplies": [
                         {"label": "조사", "action": "block", "blockId": "조사블록ID"},
                         {"label": "정산", "action": "block", "blockId": "정산블록ID"}
-                    ] if user else []
+                    ] if id_code and user else []
                 }
             })
 
