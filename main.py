@@ -161,8 +161,8 @@ def skill():
                 "template": {
                     "outputs": [{"simpleText": {"text": response}}],
                     "quickReplies": [
-                        {"label": "트리형 조사", "action": "block", "blockId": "트리형조사블록ID"},
-                        {"label": "일반 조사", "action": "block", "blockId": "일반조사블록ID"},
+                        {"label": "조사", "action": "block", "blockId": "트리형조사블록ID"},
+                        #{"label": "일반 조사", "action": "block", "blockId": "일반조사블록ID"},
                         {"label": "정산", "action": "block", "blockId": "정산블록ID"}
                     ] if id_code and user else []
                 }
