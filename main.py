@@ -161,7 +161,8 @@ def skill():
                 "template": {
                     "outputs": [{"simpleText": {"text": response}}],
                     "quickReplies": [
-                        {"label": "조사", "action": "block", "blockId": "조사블록ID"},
+                        {"label": "트리형 조사", "action": "block", "blockId": "트리형조사블록ID"},
+                        {"label": "일반 조사", "action": "block", "blockId": "일반조사블록ID"},
                         {"label": "정산", "action": "block", "blockId": "정산블록ID"}
                     ] if id_code and user else []
                 }
@@ -186,13 +187,13 @@ def skill():
                 }
             })
 
-        # 3. 기존 조사
+        # 3. 일반 조사 (utterance)
         elif type_ == 'investigate':
             user = get_user(id_code)
             utterance = params.get('utterance', '')
             parts = utterance.split()
             if len(parts) < 6 or not user:
-                response = "장소와 타겟을 정확히 입력해주세요."
+                response = "장소와 타겟을 정확히 입력해주세요. 예시: 서울 강남구 삼성동 한국폴리텍 라온관 1층정수기"
                 log_action(id_code, utterance, response)
                 return jsonify({
                     "version": "2.0",
